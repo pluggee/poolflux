@@ -34,6 +34,12 @@ def print_devices(device_list, device):
         else:
             print(" - " + i.get_device_info())
 
+def get_cpu_temp():
+    tFile = open('/sys/class/thermal/thermal_zone0/temp')
+    temp = float(tFile.read())
+    tempC = temp/1000
+    return tempC
+
 def push_datapoint(ORP, Temperature, pH):
     current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     print('timestamp : ' + current_time)
@@ -59,6 +65,15 @@ def push_datapoint(ORP, Temperature, pH):
         "time": current_time,
         "fields": {
             "value": pH
+        }
+    }
+    points.append(point)
+    cpu_temp = get_cpu_temp()
+    point = {
+        "measurement": 'CPU Temperature',
+        "time": current_time,
+        "fields": {
+            "value": cpu_temp
         }
     }
     points.append(point)

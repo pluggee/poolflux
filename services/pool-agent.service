@@ -1,6 +1,6 @@
 [Unit]
 Description=Pool Agent
-After=network.target
+After=influxdb.service
 
 [Service]
 ExecStart=/usr/local/bin/pool-agent
