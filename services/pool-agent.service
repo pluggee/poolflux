@@ -1,0 +1,14 @@
+[Unit]
+Description=Pool Agent
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/pool-agent
+Restart=on-failure
+RestartSec=10
+KillMode=process
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
