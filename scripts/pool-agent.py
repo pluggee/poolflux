@@ -1,0 +1,89 @@
+#import datetime
+import time
+from datetime import datetime
+from influxdb import InfluxDBClient
+from AtlasI2C import (
+	 AtlasI2C
+)
+
+USER = 'admin'
+PASSWORD = 'XXXX'
+DBNAME = 'pool'
+HOST = 'localhost'
+PORT = 8086
+POLLTIME = 10
+
+def get_devices():
+    device = AtlasI2C()
+    device_address_list = device.list_i2c_devices()
+    device_list = []
+
+    for i in device_address_list:
+        device.set_i2c_address(i)
+        response = device.query("I")
+        moduletype = response.split(",")[1]
+        response = device.query("name,?").split(",")[1]
+        device_list.append(AtlasI2C(address = i, moduletype = moduletype, name = response))
+    return device_list
+
+def print_devices(device_list, device):
+    for i in device_list:
+        if(i == device):
+            print("--> " + i.get_device_info())
+        else:
+            print(" - " + i.get_device_info())
+
+def push_datapoint(ORP, Temperature, pH):
+    current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    print('timestamp : ' + current_time)
+    points = []
+    point = {
+        "measurement": 'ORP',
+        "time": current_time,
+        "fields": {
+            "value": ORP
+        }
+    }
+    points.append(point)
+    point = {
+        "measurement": 'Temperature',
+        "time": current_time,
+        "fields": {
+            "value": Temperature
+        }
+    }
+    points.append(point)
+    point = {
+        "measurement": 'pH',
+        "time": current_time,
+        "fields": {
+            "value": pH
+        }
+    }
+    points.append(point)
+    print('pushing to DB ORP = ' + str(ORP) + ' Temperature = ' + str(Temperature) + ' pH = ' + str(pH))
+    client = InfluxDBClient(HOST, PORT, USER, PASSWORD, DBNAME)
+    client.switch_database(DBNAME)
+    client.write_points(points)
+
+def main():
+    device_list = get_devices()
+    device = device_list[0]
+    print_devices(device_list, device)
+    
+    while True:
+        for dev in device_list:
+            dev.write("R")
+        time.sleep(POLLTIME)
+        rawstr = device_list[0].read().split(' ')
+        v_ORP = float(rawstr[4].rstrip('\x00'))
+        rawstr = device_list[1].read().split(' ')
+        v_pH = float(rawstr[4].rstrip('\x00'))
+        rawstr = device_list[2].read().split(' ')
+        v_Temperature = float(rawstr[4].rstrip('\x00'))
+        push_datapoint(v_ORP, v_Temperature, v_pH)
+
+
+if __name__ == '__main__':
+    main()
+
