@@ -1,4 +1,5 @@
-#import datetime
+#!/usr/bin/python3
+
 import time
 from datetime import datetime
 from influxdb import InfluxDBClient
