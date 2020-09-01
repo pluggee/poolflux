@@ -1,6 +1,6 @@
 [Unit]
 Description=Attic Agent
-After=influxdb.service
+After=network.target
 
 [Service]
 ExecStart=/usr/local/bin/attic-agent
@@ -9,6 +9,7 @@ RestartSec=10
 KillMode=process
 StandardOutput=syslog
 StandardError=syslog
+User=pi
 
 [Install]
 WantedBy=multi-user.target

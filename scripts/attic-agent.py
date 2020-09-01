@@ -7,6 +7,7 @@ from datetime import datetime
 from influxdb import InfluxDBClient
 
 # Initial the dht device, with data pin connected to:
+#dhtDevice = adafruit_dht.DHT22(board.D23, use_pulseio=False)
 dhtDevice = adafruit_dht.DHT22(board.D23)
 
 USER = 'admin'
@@ -16,7 +17,15 @@ HOST = '10.0.1.30'
 PORT = 8086
 POLLTIME = 5
 
+def get_cpu_temp():
+    tFile = open('/sys/class/thermal/thermal_zone0/temp')
+    temp = float(tFile.read())
+    tempC = temp/1000
+    return tempC
+
 while True:
+    cpu_temp = get_cpu_temp()
+    
     try:
         # Print the values to the serial port
         temperature_c = dhtDevice.temperature
@@ -40,7 +49,17 @@ while True:
             }
         }
         points.append(point)
-        print ('push to DB, Temp = ' + str(temperature_c) + ' humidity = ' + str(humidity))
+        
+        point = {
+            "measurement": 'CPU Temperature',
+            "time": current_time,
+            "fields": {
+                "value": cpu_temp
+            }
+        }
+        points.append(point)
+        
+        print ('push to DB, Temp = ' + str(temperature_c) + ' humidity = ' + str(humidity) + ' cputemp = ' + str(cpu_temp))
         client = InfluxDBClient(HOST, PORT, USER, PASSWORD, DBNAME)
         client.switch_database(DBNAME)
         client.write_points(points)
