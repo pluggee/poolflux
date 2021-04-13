@@ -17,6 +17,43 @@ HOST = '10.0.1.30'
 PORT = 8086
 POLLTIME = 5
 
+turn_on_temp = 37
+turn_off_temp = 35
+vue_username = 'lala@gmail.com'
+vue_password = 'lala!'
+vue_tokenfile = '/tmp/vue_tokens.json'
+attic_outlet_on = -1
+# -1 : undefined
+#  0 : off
+#  1 : on
+
+def turn_off_attic_fan():
+    import pyemvue
+    vue = pyemvue.PyEmVue()
+    vue.login(username=vue_username, password=vue_password, token_storage_file=vue_tokenfile)
+    attic_gid = 41020
+    devices = vue.get_devices()
+    for device in devices:
+        vue.populate_device_properties(device)
+        if (device.device_gid == attic_gid):
+            print('Turning off attic fan')
+            device.outlet.outlet_on = False
+            device.outlet = vue.update_outlet(device.outlet)
+
+def turn_on_attic_fan():
+    import pyemvue
+    vue = pyemvue.PyEmVue()
+    vue.login(username=vue_username, password=vue_password, token_storage_file=vue_tokenfile)
+    attic_gid = 41020
+    devices = vue.get_devices()
+    for device in devices:
+        vue.populate_device_properties(device)
+        if (device.device_gid == attic_gid):
+            print('Turning on attic fan')
+            device.outlet.outlet_on = True
+            device.outlet = vue.update_outlet(device.outlet)
+
+
 def get_cpu_temp():
     tFile = open('/sys/class/thermal/thermal_zone0/temp')
     temp = float(tFile.read())
@@ -29,6 +66,16 @@ while True:
     try:
         # Print the values to the serial port
         temperature_c = dhtDevice.temperature
+        if (temperature_c > turn_on_temp):
+            if (attic_outlet_on != 1):
+                print('Attic is heating up')
+                turn_on_attic_fan()
+
+        if (temperature_c <= turn_off_temp):
+            if (attic_outlet_on != 0):
+                print('Attic is now cool')
+                turn_off_attic_fan()
+        
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = dhtDevice.humidity
         current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
