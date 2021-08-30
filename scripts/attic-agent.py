@@ -120,7 +120,16 @@ while True:
             }
         }
         points.append(point)
-        
+       
+        point = {
+            "measurement": 'Attic FAN State',
+            "time": current_time,
+            "fields": {
+                "value": attic_outlet_on
+            }
+        }
+        points.append(point)
+
         print ('push to DB, Temp = ' + str(temperature_c) + ' humidity = ' + str(humidity) + ' cputemp = ' + str(cpu_temp))
         client = InfluxDBClient(HOST, PORT, USER, PASSWORD, DBNAME)
         client.switch_database(DBNAME)
