@@ -5,6 +5,7 @@ import board
 import adafruit_dht
 from datetime import datetime
 from influxdb import InfluxDBClient
+import os
 
 # Initial the dht device, with data pin connected to:
 #dhtDevice = adafruit_dht.DHT22(board.D23, use_pulseio=False)
@@ -66,9 +67,16 @@ def get_cpu_temp():
     tempC = temp/1000
     return tempC
 
+
+# file clean up
+try:
+    print('Removing token file')
+    os.remove(vue_tokenfile)
+except:
+    print('Trouble removing vue token file')
+
 while True:
     cpu_temp = get_cpu_temp()
-    
     try:
         print('attic_outlet_on = ' + str(attic_outlet_on))
         # Print the values to the serial port
