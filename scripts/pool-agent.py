@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import serial
 import time
 from datetime import datetime
 from influxdb import InfluxDBClient
@@ -13,6 +14,8 @@ DBNAME = 'pool'
 HOST = 'localhost'
 PORT = 8086
 POLLTIME = 10
+
+ser = serial.Serial('/dev/ttyACM0', timeout = 1)  # open serial port
 
 def get_devices():
     device = AtlasI2C()
@@ -40,7 +43,7 @@ def get_cpu_temp():
     tempC = temp/1000
     return tempC
 
-def push_datapoint(ORP, Temperature, pH):
+def push_datapoint(ORP, Temperature, pH, waterlevel):
     current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     print('timestamp : ' + current_time)
     points = []
@@ -65,6 +68,14 @@ def push_datapoint(ORP, Temperature, pH):
         "time": current_time,
         "fields": {
             "value": pH
+        }
+    }
+    points.append(point)
+    point = {
+        "measurement": 'Water Level',
+        "time": current_time,
+        "fields": {
+            "value": waterlevel 
         }
     }
     points.append(point)
@@ -97,8 +108,9 @@ def main():
         v_pH = float(rawstr[4].rstrip('\x00'))
         rawstr = device_list[2].read().split(' ')
         v_Temperature = float(rawstr[4].rstrip('\x00'))
-        push_datapoint(v_ORP, v_Temperature, v_pH)
-
+        raw_waterlevel = float(ser.readline().decode("utf-8").rstrip().lstrip())
+        waterlevel = raw_waterlevel*2/(-66) + 3.8 + 666/66
+        push_datapoint(v_ORP, v_Temperature, v_pH, waterlevel)
 
 if __name__ == '__main__':
     main()
