@@ -78,19 +78,8 @@ except:
 while True:
     cpu_temp = get_cpu_temp()
     try:
-        print('attic_outlet_on = ' + str(attic_outlet_on))
         # Print the values to the serial port
         temperature_c = dhtDevice.temperature
-        if (temperature_c > turn_on_temp):
-            if (attic_outlet_on != 1):
-                print('Attic is heating up')
-                turn_on_attic_fan()
-
-        if (temperature_c <= turn_off_temp):
-            if (attic_outlet_on != 0):
-                print('Attic is now cool')
-                turn_off_attic_fan()
-        
         temperature_f = temperature_c * (9 / 5) + 32
         humidity = dhtDevice.humidity
         current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -111,7 +100,7 @@ while True:
             }
         }
         points.append(point)
-        
+
         point = {
             "measurement": 'CPU Temperature',
             "time": current_time,
@@ -120,7 +109,7 @@ while True:
             }
         }
         points.append(point)
-       
+
         point = {
             "measurement": 'Attic FAN State',
             "time": current_time,
@@ -135,6 +124,17 @@ while True:
         client.switch_database(DBNAME)
         client.write_points(points)
 
+        print('attic_outlet_on = ' + str(attic_outlet_on))
+        if (temperature_c > turn_on_temp):
+            if (attic_outlet_on != 1):
+                print('Attic is heating up')
+                turn_on_attic_fan()
+
+        if (temperature_c <= turn_off_temp):
+            if (attic_outlet_on != 0):
+                print('Attic is now cool')
+                turn_off_attic_fan()
+        
     except RuntimeError as error:
         # Errors happen fairly often, DHT's are hard to read, just keep going
         print(error.args[0])
