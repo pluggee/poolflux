@@ -40,6 +40,7 @@ run_loop = True
 def handle_sigterm(signum, frame):
     global run_loop
     run_loop = False
+    logging.info('Received terminal signal {}'.format(signum))
 
 signal.signal(signal.SIGTERM, handle_sigterm)
 
@@ -53,6 +54,7 @@ file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(messag
 logging.getLogger().addHandler(file_handler)
 
 coloredlogs.install(level='INFO')
+logging.info('--- Starting Attic logger ---')
 logging.info('influx_token: {}'.format(influx_token))
 
 def turn_off_attic_fan():
@@ -102,7 +104,7 @@ try:
 except:
     logging.warning('Trouble removing vue token file')
 
-while True:
+while (run_loop):
     cpu_temp = get_cpu_temp()
     try:
         # Print the values to the serial port
@@ -154,3 +156,5 @@ while True:
         raise error
 
     time.sleep(POLLTIME)
+
+logging.info('Terminating measurement')
