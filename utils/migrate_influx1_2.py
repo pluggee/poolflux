@@ -60,9 +60,8 @@ for p2migrate in input_dict["migration"]:
     write_api = client2.write_api(write_options=SYNCHRONOUS)
 
     # Query and transfer data in chunks of 1000 points
-    chunk_size = 100000
+    chunk_size = 500
     offset = 0
-
 
     with rich.progress.Progress() as progress:
         task = progress.add_task("[cyan]Pushing points to InfluxDB2...", total=total_points)
@@ -76,13 +75,16 @@ for p2migrate in input_dict["migration"]:
                 break
 
             # Write data to InfluxDB 2.6
-#            for result in result_set:
-#                for record in result:
-#                    point = Point(meas2)
-#                    point.field(field2, record[field1])
-#                    point.time(record["time"])
-#                    write_api.write(bucket=influx26_bucket, record=point)
-
+            for result in result_set:
+                for record in result:
+                    point = Point(meas2)
+                    point.field(field2, record[field15])
+                    if (field2 == 'temp_c'):
+                        temp_f = record[field15]*1.8 + 32
+                        point.field('temp_f', temp_f)
+                    point.time(record["time"])
+                    write_api.write(bucket=db2_bucket, record=point)
+                        
             # Update the offset
             offset += chunk_size
             progress.update(task, advance=chunk_size)
