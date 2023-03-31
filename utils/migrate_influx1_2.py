@@ -3,9 +3,11 @@ from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 import sys
 import json
-import logging, coloredlogs
+import logging
+import coloredlogs
 import rich
 import rich.progress
+import signal
 
 coloredlogs.install(level='INFO')
 
@@ -29,21 +31,24 @@ db2_token = input_dict["auth"]["db2_token"]
 db2_org = input_dict["auth"]["db2_org"]
 db2_bucket = input_dict["auth"]["db2_bucket"]
 
-logging.info("Migration authentication:\n{}".format(json.dumps(input_dict["auth"], indent=4)))
+logging.info("Migration authentication:\n{}".format(
+    json.dumps(input_dict["auth"], indent=4)))
+
 
 for p2migrate in input_dict["migration"]:
     logging.info("Migrating:\n{}".format(json.dumps(p2migrate, indent=4)))
-    
+
     # Connect to InfluxDB 1.5
-    client15 = InfluxDBClient15(host=db15_host, port=db15_port, username=db15_un, password=db15_pw)
+    client15 = InfluxDBClient15(
+        host=db15_host, port=db15_port, username=db15_un, password=db15_pw)
     client15.switch_database(db15_db)
-    
+
     # Query the total number of points in the measurement
     meas15 = p2migrate["db15_meas"]
     field15 = p2migrate["db15_field"]
     meas2 = p2migrate["db2_meas"]
     field2 = p2migrate["db2_field"]
-    
+
     count_query = f'SELECT COUNT(*) FROM "{meas15}"'
     count_result = client15.query(count_query)
     # Extract the total number of points from the result
@@ -63,34 +68,39 @@ for p2migrate in input_dict["migration"]:
     chunk_size = 500
     offset = 0
 
-    with rich.progress.Progress() as progress:
-        task = progress.add_task("[cyan]Pushing points to InfluxDB2...", total=total_points)
+    try:
+        with rich.progress.Progress() as progress:
+            task = progress.add_task("[cyan]Migrating ({},{}) -> ({},{})...".format(
+                meas15, field15, meas2, field2), total=total_points)
 
-        while True:
-            # Query data from InfluxDB 1.5
-            query = f'SELECT * FROM "{meas15}" LIMIT {chunk_size} OFFSET {offset}'
-            result_set = client15.query(query)
+            while True:
+                # Query data from InfluxDB 1.5
+                query = f'SELECT * FROM "{meas15}" LIMIT {chunk_size} OFFSET {offset}'
+                result_set = client15.query(query)
 
-            if not result_set:
-                break
+                if not result_set:
+                    break
 
-            # Write data to InfluxDB 2.6
-            for result in result_set:
-                for record in result:
-                    point = Point(meas2)
-                    point.field(field2, record[field15])
-                    if (field2 == 'temp_c'):
-                        temp_f = record[field15]*1.8 + 32
-                        point.field('temp_f', temp_f)
-                    point.time(record["time"])
-                    write_api.write(bucket=db2_bucket, record=point)
-                        
-            # Update the offset
-            offset += chunk_size
-            progress.update(task, advance=chunk_size)
+                # Write data to InfluxDB 2.6
+                for result in result_set:
+                    for record in result:
+                        point = Point(meas2)
+                        point.field(field2, record[field15])
+                        if (field2 == 'temp_c'):
+                            temp_f = record[field15]*1.8 + 32
+                            point.field('temp_f', temp_f)
+                        point.time(record["time"])
+                        write_api.write(bucket=db2_bucket, record=point)
+
+                # Update the offset
+                offset += chunk_size
+                num_str = "{:>11d}".format(offset)
+                progress.update(task, advance=chunk_size)
+                logging.info("{}/{} migrated".format(num_str, total_points))
+
+    except KeyboardInterrupt:
+        logging.info("Received keyboard interrupt. Exiting...")
 
     # Close the connections
     client15.close()
     client2.__del__()
-
-
