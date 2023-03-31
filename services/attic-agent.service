@@ -3,13 +3,14 @@ Description=Attic Agent
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/attic-agent
+ExecStart=/usr/local/bin/attic-agent /var/log/attic/attic-agent.log
 Restart=on-failure
 RestartSec=10
 KillMode=process
 StandardOutput=syslog
 StandardError=syslog
 User=pi
+Environment=INFLUX_TOKEN=token_val_here
 
 [Install]
 WantedBy=multi-user.target
