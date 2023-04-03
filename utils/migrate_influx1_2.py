@@ -75,6 +75,7 @@ for p2migrate in input_dict["migration"]:
         with rich.progress.Progress() as progress:
             task = progress.add_task("[cyan]Migrating ({},{}) -> ({},{})...".format(
                 meas15, field15, meas2, field2), total=total_points)
+            progress.update(task, advance=offset)
 
             while True:
                 # Query data from InfluxDB 1.5
@@ -99,10 +100,10 @@ for p2migrate in input_dict["migration"]:
                             temp_f = record[field15]*1.8 + 32
                             point.field('temp_f', temp_f)
                         point.time(record["time"])
-                        points.append(point)        
+                        points.append(point)
                 te = time.monotonic()
                 tp = round(te - ts, 2)
-                
+
                 ts = time.monotonic()
                 write_api.write(bucket=db2_bucket, record=points)
                 te = time.monotonic()
@@ -112,7 +113,8 @@ for p2migrate in input_dict["migration"]:
                 offset += chunk_size
                 num_str = "{:>11d}".format(offset)
                 progress.update(task, advance=chunk_size)
-                logging.info("{}/{} migrated --- times {}/{}/{}".format(num_str, total_points, tq, tp, tw))
+                logging.info(
+                    "{}/{} migrated --- times {}/{}/{}".format(num_str, total_points, tq, tp, tw))
                 time.sleep(1)
 
     except KeyboardInterrupt:
