@@ -88,8 +88,6 @@ def get_cpu_temp():
 
 def push_datapoint(ORP, Temperature, pH, waterlevel):
     current_time = datetime.utcnow()
-    logging.info('timestamp : ' + current_time)
-
     point_pool = Point("pool")
     point_pool.time(current_time, WritePrecision.NS)
     point_pool.field("ORP", ORP)
