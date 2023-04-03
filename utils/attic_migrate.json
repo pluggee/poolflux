@@ -1,0 +1,23 @@
+{
+    "auth": {
+        "db15_host": "influx.elnamla.com",
+        "db15_port": 8087,
+        "db15_db": "attic",
+        "db15_un": "admin",
+        "db15_pw": "XXXX",
+        "db2_url": "https://influx.elnamla.com:8086",
+        "db2_token": "O5hgr32G60eIQ6J_-Gidhlnc9aUuFJ-CMuCSPxHgj7R05pLCFTexkPwGWgzFbjNK4HjCkYJKMG8gs7_825--XA==",
+        "db2_org": "home",
+        "db2_bucket": "attic"
+    },
+    "migration": [
+        {
+            "db15_meas": "Attic FAN State",
+            "db15_field": "value",
+            "db2_meas": "FAN",
+            "db2_field": "state",
+	    "offset": 0,
+	    "chunk": 100000
+        }
+    ]
+}

@@ -8,6 +8,7 @@ import coloredlogs
 import rich
 import rich.progress
 import signal
+import time
 
 coloredlogs.install(level='INFO')
 
@@ -51,6 +52,7 @@ for p2migrate in input_dict["migration"]:
 
     count_query = f'SELECT COUNT(*) FROM "{meas15}"'
     count_result = client15.query(count_query)
+
     # Extract the total number of points from the result
     total_points = 0
     for point_count in count_result.get_points():
@@ -65,8 +67,9 @@ for p2migrate in input_dict["migration"]:
     write_api = client2.write_api(write_options=SYNCHRONOUS)
 
     # Query and transfer data in chunks of 1000 points
-    chunk_size = 500
-    offset = 0
+    chunk_size = p2migrate["chunk"]
+    offset = p2migrate["offset"]
+    logging.info("Starting to migrate from offset {}".format(offset))
 
     try:
         with rich.progress.Progress() as progress:
@@ -76,12 +79,18 @@ for p2migrate in input_dict["migration"]:
             while True:
                 # Query data from InfluxDB 1.5
                 query = f'SELECT * FROM "{meas15}" LIMIT {chunk_size} OFFSET {offset}'
+                ts = time.monotonic()
                 result_set = client15.query(query)
+                te = time.monotonic()
+                tq = round(te - ts, 2)
 
                 if not result_set:
                     break
 
+                points = []
+
                 # Write data to InfluxDB 2.6
+                ts = time.monotonic()
                 for result in result_set:
                     for record in result:
                         point = Point(meas2)
@@ -90,13 +99,21 @@ for p2migrate in input_dict["migration"]:
                             temp_f = record[field15]*1.8 + 32
                             point.field('temp_f', temp_f)
                         point.time(record["time"])
-                        write_api.write(bucket=db2_bucket, record=point)
+                        points.append(point)        
+                te = time.monotonic()
+                tp = round(te - ts, 2)
+                
+                ts = time.monotonic()
+                write_api.write(bucket=db2_bucket, record=points)
+                te = time.monotonic()
+                tw = round(te - ts, 2)
 
                 # Update the offset
                 offset += chunk_size
                 num_str = "{:>11d}".format(offset)
                 progress.update(task, advance=chunk_size)
-                logging.info("{}/{} migrated".format(num_str, total_points))
+                logging.info("{}/{} migrated --- times {}/{}/{}".format(num_str, total_points, tq, tp, tw))
+                time.sleep(1)
 
     except KeyboardInterrupt:
         logging.info("Received keyboard interrupt. Exiting...")
