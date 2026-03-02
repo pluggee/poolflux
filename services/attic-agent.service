@@ -10,7 +10,7 @@ KillMode=process
 StandardOutput=syslog
 StandardError=syslog
 User=pi
-Environment=INFLUX_TOKEN=token_val_here
+EnvironmentFile=/etc/environment
 
 [Install]
 WantedBy=multi-user.target

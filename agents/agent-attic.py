@@ -12,8 +12,9 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 import logging.handlers
 
 influx_token = os.getenv("INFLUX_TOKEN")
-org = "home"
-bucket = "attic"
+influx_address = os.getenv("INFLUX_ADDRESS")
+org = os.getenv("INFLUX_ORG")
+bucket = os.getenv("INFLUX_BUCKET")
 
 # Initial the dht device, with data pin connected to:
 dhtDevice = adafruit_dht.DHT22(board.D23)
@@ -22,9 +23,9 @@ POLLTIME = 5
 
 turn_on_temp = 37
 turn_off_temp = 35
-vue_username = 'sherif.eid@gmail.com'
-vue_password = 'SH6hU666v2Mw#n!'
-vue_tokenfile = '/tmp/vue_tokens.json'
+vue_username = os.getenv("VUE_UN")
+vue_password = os.getenv("VUE_PW")
+vue_tokenfile = os.getenv("VUE_TOKENFILE")
 attic_outlet_on = -1
 # -1 : undefined
 #  0 : off
@@ -128,7 +129,7 @@ while (run_loop):
         point_fan.field("state", attic_outlet_on)
 
         logging.info('push to DB, Temp = ' + str(temperature_c) + ' humidity = ' + str(humidity) + ' cputemp = ' + str(cpu_temp))
-        with InfluxDBClient(url="https://influx.elnamla.com:8086", token=influx_token, org=org) as client:
+        with InfluxDBClient(url=influx_address, token=influx_token, org=org) as client:
             write_api = client.write_api(write_options=SYNCHRONOUS)
             write_api.write(bucket, org, point_dht22)
             write_api.write(bucket, org, point_cpu)
