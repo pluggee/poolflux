@@ -25,8 +25,9 @@ POLLTIME = 10
 ser = serial.Serial('/dev/ttyACM0', timeout=1)  # open serial port
 
 influx_token = os.getenv("INFLUX_TOKEN")
-org = "home"
-bucket = "pool"
+influx_address = os.getenv("INFLUX_ADDRESS")
+org = os.getenv("INFLUX_ORG")
+bucket = os.getenv("INFLUX_BUCKET")
 
 # check if first argument exists, will be the config file
 log_filename = 'mylog.log'
@@ -102,7 +103,7 @@ def push_datapoint(ORP, Temperature, pH, waterlevel):
     logging.info('pushing to DB ORP = ' + str(ORP) + ' Temperature = ' +
                  str(Temperature) + ' pH = ' + str(pH))
 
-    with InfluxDBClient(url="https://influx.elnamla.com:8086", token=influx_token, org=org) as client:
+    with InfluxDBClient(url=influx_address, token=influx_token, org=org) as client:
         write_api = client.write_api(write_options=SYNCHRONOUS)
         write_api.write(bucket, org, [point_pool, point_cpu])
     client.close()
